@@ -6,8 +6,7 @@
 
 
 (version-case
-  [(and (version>= (version) "5.3.3.7")
-        (version< (version) "6.3"))
+  [(version>= (version) "5.3.3.7")
 
    ;; Parsing Racket 5.3 bytecode structures into our own structures.
    (require "path-rewriter.rkt"
@@ -98,7 +97,7 @@
                                       (close-output-port out)
                                       (open-input-bytes (get-output-bytes out)))))])
               (let ([n (match v
-                         [(struct compilation-top (_ prefix (struct primval (n)))) n]
+                         [(struct compilation-top (_ _binding-namess prefix (struct primval (n)))) n]
                          [else #f])])
                 (hash-set! table n (car b)))))
        table))
@@ -152,7 +151,7 @@
 
    (define (parse-top a-top)
      (match a-top
-       [(struct compilation-top (max-let-depth prefix code))
+       [(struct compilation-top (max-let-depth _binding-namess prefix code))
         (maybe-fix-module-name
          (make-Top (parse-prefix prefix) 
                    (parse-top-code code)))]))
@@ -185,7 +184,7 @@
 
    (define (parse-prefix a-prefix)
      (match a-prefix
-       [(struct prefix (num-lifts toplevels stxs))
+       [(struct prefix (num-lifts toplevels stxs _src-inspector-desc))
         (make-Prefix 
          (append (map parse-prefix-toplevel toplevels)
                  (map (lambda (x) #f) stxs)
@@ -321,10 +320,10 @@
         (unwrap-wrapped encoded)]))
 
    (define (unwrap-wrapped encoded)
-     (cond [(wrapped? encoded)
-            (match encoded 
-              [(struct wrapped (datum wraps certs))
-               (unwrap-wrapped datum)])]
+     (cond #;[(wrapped? encoded)
+              (match encoded 
+                [(struct wrapped (datum wraps certs))
+                 (unwrap-wrapped datum)])]
            [(pair? encoded)
             (cons (unwrap-wrapped (car encoded))
                   (unwrap-wrapped (cdr encoded)))]
@@ -373,7 +372,7 @@
      (match form
        [(struct mod (name srcname self-modidx prefix provides requires
                           body syntax-body unexported max-let-depth dummy lang-info
-                          internal-context flags
+                          internal-context _binding-names flags
                           pre-submodules post-submodules))
         (cond
          [(symbol? name)
